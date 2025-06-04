@@ -1,0 +1,14 @@
+gradio
+ollama
+mcp[cli]
+langchain
+langchain-mcp-adapters
+langchain-ollama
+langgraph
+python-dotenv
+PyPDF2
+python-docx
+python-pptx
+fastapi
+uvicorn
+fastapi-mcp
