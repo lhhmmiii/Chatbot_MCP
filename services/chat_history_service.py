@@ -19,12 +19,6 @@ class ChatHistoryService:
     def clear_chat_history(self):
         self.chat_message_history.clear()
 
-    def save_chat_history(self):
-        self.chat_message_history.save()
-
-    def load_chat_history(self):
-        self.chat_message_history.load()
-
 
 
 if __name__ == "__main__":
