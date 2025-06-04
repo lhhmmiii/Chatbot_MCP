@@ -17,7 +17,7 @@ from config.prompt_template import file_agent_template
 from config.llm import ollama_chat_model
 
 # Import ChatHistoryService bạn đã có
-from services.chat_history_service import ChatHistoryService  # giả sử file này tên chat_history_service.py
+from services.chat_history_service import ChatHistoryService
 
 # Thiết lập server MCP để lấy file tools
 server_params = mcp.StdioServerParameters(
@@ -31,10 +31,7 @@ server_params = mcp.StdioServerParameters(
     ],
 )
 
-async def run_agent(user_input: str, user_id: str = "1323"):
-    # Khởi tạo service quản lý lịch sử chat
-    chat_service = ChatHistoryService(user_id=user_id)
-
+async def run_agent(user_input: str, chat_service: ChatHistoryService):
     # Load lịch sử chat trước (nếu có)
     chat_history = chat_service.get_chat_history()
 

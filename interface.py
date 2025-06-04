@@ -1,92 +1,73 @@
 import gradio as gr
-import os
-import json
-from typing import List, Dict
+from filesystem_agent import run_agent
+from services.chat_history_service import ChatHistoryService
+from utils.rlhf_feedback import apply_rlhf_feedback
+from utils.create_metadata import create_metadata, save_metadata_to_xlsx
 
-### ==== CẤU HÌNH ==== ###
-FOLDER_PATH = "./data"  # Thư mục chứa file cần tìm
-MCP_CLOUD_ENDPOINT = "http://your-mcp-api.com/send_metadata"  # API (tùy chọn)
 
-### ==== CÁC HÀM LOGIC (bạn cần điền vào) ==== ###
+def send_metadata_to_mcp(metadata):
+    pass
 
-def extract_intent_and_keywords(prompt: str) -> Dict:
-    """Phân tích intent và trích từ khóa từ prompt người dùng"""
-    # TODO: Triển khai LLM local hoặc regex đơn giản
-    return {"intent": "tìm_file", "keywords": ["kế hoạch", "2024"]}
+def generate_chain_of_thought():
+    pass
 
-def index_files(folder: str) -> List[str]:
-    """Tìm và liệt kê các file trong thư mục"""
-    # TODO: Duyệt qua thư mục, lọc PDF/DOCX/PPTX
-    return ["plan2024.pdf", "marketing2024.pptx"]
 
-def search_files(files: List[str], keywords: List[str]) -> List[str]:
-    """Tìm file có chứa từ khóa"""
-    # TODO: Đọc nội dung (dùng PyMuPDF, python-docx, pptx), check từ khóa
-    return ["plan2024.pdf", "marketing2024.pptx"]
+with gr.Blocks(theme=gr.themes.Soft()) as demo:
+    gr.Markdown("""
+    # 📂 Chat AI tìm kiếm và phân loại file
+    Ứng dụng AI chạy local LLM tích hợp MCP (Model Context Protocol)
+    """)
 
-def classify_file(file_path: str) -> str:
-    """Phân loại nội dung file"""
-    # TODO: Dùng LLM hoặc rule để gán nhãn
-    return "Nhóm A" if "plan" in file_path else "Nhóm B"
+    user_id = gr.State("1323")
 
-def send_metadata_to_mcp(filename: str, label: str) -> bool:
-    """Gửi metadata tới MCP Cloud (hoặc ghi ra file local nếu offline)"""
-    metadata = {"filename": filename, "label": label}
-    # TODO: Gửi qua API thật (hoặc lưu ra JSON/txt)
-    print(f"🚀 Gửi metadata: {json.dumps(metadata)}")
-    return True
+    with gr.Row():
+        chatbot = gr.Chatbot(label="💬 Chat với AI", height=400, type="messages")
+        history = gr.State([])  # Lưu lịch sử chat theo định dạng: [{"role": ..., "content": ...}]
 
-### ==== HÀM XỬ LÝ PROMPT ==== ###
+    with gr.Row():
+        user_input = gr.Textbox(placeholder="Nhập yêu cầu...", label="Input")
+        submit_btn = gr.Button("Gửi")
 
-def handle_prompt(user_input: str) -> str:
-    # Phân tích prompt
-    parsed = extract_intent_and_keywords(user_input)
-    intent, keywords = parsed["intent"], parsed["keywords"]
+    with gr.Row():
+        rlhf_user_feedback = gr.Textbox(label="✏️ Phản hồi người dùng", placeholder="VD: Nên là Nhóm B")
+        send_feedback_btn = gr.Button("Gửi phản hồi RLHF")
 
-    if intent == "tìm_file":
-        response = f"🔍 Đang tìm kiếm với từ khóa: {', '.join(keywords)}"
-        
-        # Index file
-        all_files = index_files(FOLDER_PATH)
-        
-        # Tìm theo từ khóa
-        matched_files = search_files(all_files, keywords)
-        
-        # Phân loại
-        results = []
-        for f in matched_files:
-            label = classify_file(f)
-            send_metadata_to_mcp(f, label)
-            results.append(f"- {f} → {label}")
-        
-        if results:
-            return (
-                f"{response}\n📄 Tìm thấy {len(results)} file:\n" +
-                "\n".join(results) +
-                "\n✅ Metadata đã được xử lý."
-            )
-        else:
-            return "❗ Không tìm thấy file nào phù hợp."
-    else:
-        return "⚠️ Tôi chưa hiểu yêu cầu. Vui lòng thử lại."
+    with gr.Row():
+        file_results = gr.Textbox(label="📄 Kết quả tìm kiếm & phân loại", lines=6)
 
-### ==== GRADIO UI ==== ###
+    with gr.Row():
+        cot_output = gr.Textbox(label="📝 Chain of Thought", lines=4)
+        feedback_output = gr.Textbox(label="🔁 RLHF Phản hồi người dùng", lines=2)
 
-with gr.Blocks() as demo:
-    gr.Markdown("## 🤖 AI Tìm kiếm & Phân loại File (Offline)")
-    chatbot = gr.Textbox(lines=10, label="Lịch sử Chat", interactive=False)
-    user_input = gr.Textbox(placeholder="Nhập yêu cầu...", label="Bạn hỏi")
-    send_button = gr.Button("Gửi")
+    with gr.Row():
+        metadata_file_output = gr.File(label="📂 Metadata File")
 
-    state = gr.State("")
+    # Async submit xử lý
+    async def on_submit(user_input, history, user_id):
+        # Khởi tạo service quản lý lịch sử chat
+        chat_service = ChatHistoryService(user_id=user_id)
+        result = await run_agent(user_input, chat_service)
+        history.append({"role": "user", "content": user_input})
+        history.append({"role": "assistant", "content": result})
 
-    def update_chat(message, history):
-        reply = handle_prompt(message)
-        updated_chat = f"👤 Bạn: {message}\n🤖 AI: {reply}"
-        return updated_chat, updated_chat
+        # Create metadata and save to xlsx
+        metadata = create_metadata(text=result, file_name="agent_response.txt", label="Agent Response")
+        xlsx_file_name = save_metadata_to_xlsx(metadata, "agent_response_metadata.xlsx")
 
-    send_button.click(fn=update_chat,
-                      inputs=[user_input, state],
-                      outputs=[chatbot, state])
+        return history, result, "(CoT sẽ hiển thị ở đây)", "(Phản hồi RLHF sẽ hiển thị ở đây)", xlsx_file_name
+    
+    # Dùng partial để truyền user_id cố định
+    submit_btn.click(
+        fn=on_submit,
+        inputs=[user_input, history, user_id],
+        outputs=[chatbot, file_results, cot_output, feedback_output, metadata_file_output]
+    )
 
-demo.launch()
+    send_feedback_btn.click(
+        fn=apply_rlhf_feedback,
+        inputs=[rlhf_user_feedback, user_id],
+        outputs=feedback_output
+    )
+
+if __name__ == "__main__":
+    demo.launch()

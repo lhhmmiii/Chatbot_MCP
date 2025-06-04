@@ -1,5 +1,6 @@
 from datetime import datetime
 import pandas as pd
+import os
 
 def _format_file_timestamp(timestamp: float, include_time: bool = False):
     """
@@ -42,7 +43,7 @@ def create_metadata(text: str, file_name: str, label: str):
     }
     return metadata
 
-def save_metadata_to_xlsx(metadata: dict, xlsx_file_name: str):
+def save_metadata_to_xlsx(metadata: dict, xlsx_file_name: str, folder_dir: str = "Metadata"):
     """
     Save metadata to an .xlsx file using pandas and openpyxl.
 
@@ -54,8 +55,9 @@ def save_metadata_to_xlsx(metadata: dict, xlsx_file_name: str):
         str: The path to the created .xlsx file.
     """
     df = pd.DataFrame([metadata])
-    df.to_excel(xlsx_file_name, index=False, engine='openpyxl')
-    return xlsx_file_name
+    path = os.path.join(folder_dir, xlsx_file_name)
+    df.to_excel(path, index=False, engine='openpyxl')
+    return path
 
 if __name__ == "__main__":
     metadata = create_metadata("Hello, world!", "test.txt", "test")
