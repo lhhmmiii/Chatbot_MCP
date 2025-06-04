@@ -5,6 +5,7 @@ langchain
 langchain-mcp-adapters
 langchain-ollama
 langgraph
+langchain-community
 python-dotenv
 PyPDF2
 python-docx
@@ -12,3 +13,5 @@ python-pptx
 fastapi
 uvicorn
 fastapi-mcp
+SQLAlchemy
+openpyxl
