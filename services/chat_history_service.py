@@ -26,3 +26,7 @@ class ChatHistoryService:
         self.chat_message_history.load()
 
 
+
+if __name__ == "__main__":
+    chat_history_service = ChatHistoryService(user_id="1323")
+    print(chat_history_service.get_chat_history())
