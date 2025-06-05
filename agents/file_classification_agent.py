@@ -27,7 +27,8 @@ def create_file_classification_agent():
     agent = create_react_agent(
         model=ollama_chat_model,
         tools=[classify_file_tool],
-        prompt=prompt
+        prompt=prompt,
+        name="File Classification Agent"
     )
     return agent
 

@@ -60,7 +60,8 @@ def create_metadata_agent():
     agent = create_react_agent(
         tools=[create_metadata],
         model=ollama_chat_model,
-        prompt=prompt
+        prompt=prompt,
+        name="Metadata Agent"
     )
     return agent
 
@@ -75,7 +76,8 @@ def save_metadata_to_xlsx_agent():
     agent = create_react_agent(
         tools=[save_metadata_to_xlsx],
         model=ollama_chat_model,
-        prompt=prompt
+        prompt=prompt,
+        name="Save Metadata to XLSX Agent"
     )
     return agent
 

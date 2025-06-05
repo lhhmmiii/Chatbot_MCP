@@ -70,7 +70,8 @@ def create_text_extraction_agent():
     agent = create_react_agent(
         tools=tools,
         model=ollama_chat_model,
-        prompt=prompt
+        prompt=prompt,
+        name="Text Extraction Agent"
     )
     return agent
 

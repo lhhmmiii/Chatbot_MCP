@@ -45,7 +45,8 @@ async def create_document_search_agent():
     agent = create_react_agent(
         model=ollama_chat_model,
         tools=tools,
-        prompt=prompt
+        prompt=prompt,
+        name="Document Search Agent"
     )
     return agent
 
