@@ -10,7 +10,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from langchain_core.tools import tool
 from langchain.prompts import PromptTemplate
 from langgraph.prebuilt import create_react_agent
-from config.llm import ollama_chat_model  # đảm bảo model này hoạt động như OpenAI-compatible
+from config.llm import gemini  # đảm bảo model này hoạt động như OpenAI-compatible
 
 # ---------------------- TOOLS ----------------------
 
@@ -69,7 +69,7 @@ def create_text_extraction_agent():
 
     agent = create_react_agent(
         tools=tools,
-        model=ollama_chat_model,
+        model=gemini,
         prompt=prompt,
         name="Text Extraction Agent"
     )
@@ -81,7 +81,7 @@ if __name__ == "__main__":
     agent = create_text_extraction_agent()
     result = agent.invoke(
         {
-            "messages": "Extract text from the file at path: D:/Project/Chatbot_CNM/data/Chain_of_thought.pdf"
+            "messages": "Extract text from the file at path: C:/Users/AIP-PC051/Documents/Chatbot_MCP/data/Chain_of_thought.pdf"
         },
         config={"recursion_limit": 50}
     )
