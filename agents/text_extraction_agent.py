@@ -62,9 +62,9 @@ def create_text_extraction_agent():
     ]
 
     prompt = """
-    You are a document assistant that extracts text from files.
-    Use the appropriate tool to extract text from PDF, Word, or PowerPoint documents.
-    Respond only with the text content extracted.
+    Bạn là trợ lý tài liệu trích xuất văn bản từ các tệp.
+    Sử dụng công cụ thích hợp để trích xuất văn bản từ các tài liệu PDF, Word hoặc PowerPoint.
+    Chỉ trả lời bằng nội dung văn bản đã trích xuất.
     """
 
     agent = create_react_agent(

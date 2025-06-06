@@ -7,10 +7,13 @@ from text_extraction_agent import create_text_extraction_agent
 from file_classification_agent import create_file_classification_agent
 from metadata_agent import create_metadata_agent
 from config.llm import gemini
+from utils.pretty_print_message import pretty_print_messages
+from PIL import Image
+import io
 import asyncio
 
 
-async def main():
+async def create_supervisor_agent():
     filesystem_agent = await create_filesystem_agent()
     text_extraction_agent = create_text_extraction_agent()
     file_classification_agent = create_file_classification_agent()
@@ -34,19 +37,34 @@ async def main():
         """,
         supervisor_name="SupervisorAgent"
     ).compile()
+    return supervisor
 
+
+async def create_graph():
+    supervisor = await create_supervisor_agent()
+    png_bytes = supervisor.get_graph().draw_mermaid_png()  # giả sử trả về bytes PNG
+
+    # Lưu bytes PNG ra file
+    with open("graph.png", "wb") as f:
+        f.write(png_bytes)
+
+    # Mở và hiển thị ảnh bằng PIL
+    img = Image.open(io.BytesIO(png_bytes))
+    img.show()
+
+async def main():
+    supervisor = await create_supervisor_agent()
     async for chunk in supervisor.astream(
         {
             "messages": [
                 {
                     "role": "user",
-                    "content": "Tìm kiếm các file liên quan tới LLM trong thư mục cho phép và xuất ra metadata."
+                    "content": "Tìm kiếm các file liên quan tới LLM trong thư mục cho phép và xuất metadata vào file excel."
                 }
             ]
         }
     ):
-        print(chunk)
-        print("\n")
+        pretty_print_messages(chunk)
 
 if __name__ == "__main__":
     asyncio.run(main())
