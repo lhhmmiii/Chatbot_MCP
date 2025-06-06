@@ -7,6 +7,7 @@ from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain.tools import tool
 from langgraph.prebuilt import create_react_agent
+from langgraph_swarm import create_handoff_tool
 
 
 @tool
@@ -22,11 +23,15 @@ def classify_file_tool(file_content: str) -> str:
 
 
 def create_file_classification_agent():
+    transfer_to_metadata_agent = create_handoff_tool(
+        agent_name="Metadata Agent",
+        description="Transfer to Metadata Agent"
+    )
     prompt = "Bạn là một tác nhân chuyên phân loại các tập tin dựa trên nội dung của chúng\
     Chỉ đưa ra kết quả phân loại, không đưa ra bất kỳ lời giải thích nào."
     agent = create_react_agent(
         model=ollama_chat_model,
-        tools=[classify_file_tool],
+        tools=[classify_file_tool, transfer_to_metadata_agent],
         prompt=prompt,
         name="File Classification Agent"
     )

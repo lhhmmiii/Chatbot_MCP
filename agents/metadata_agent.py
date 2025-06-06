@@ -9,6 +9,7 @@ from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain.tools import tool
 from config.llm import ollama_chat_model
+from langgraph_swarm import create_handoff_tool
 
 @tool
 def create_metadata(text: str, file_name: str, label: str):
@@ -55,10 +56,14 @@ def create_metadata_agent():
     """
     Create an agent for generating metadata for a given text document.
     """
+    transfer_to_save_metadata_to_xlsx_agent = create_handoff_tool(
+        agent_name="Save Metadata to XLSX Agent",
+        description="Transfer to Save Metadata to XLSX Agent"
+    )
     prompt = "You are an agent specialized in creating metadata for documents. Use the provided information to\
     generate metadata."
     agent = create_react_agent(
-        tools=[create_metadata],
+        tools=[create_metadata, transfer_to_save_metadata_to_xlsx_agent],
         model=ollama_chat_model,
         prompt=prompt,
         name="Metadata Agent"

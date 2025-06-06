@@ -8,6 +8,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import HumanMessage, AIMessage
 from config.llm import ollama_chat_model
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langgraph_swarm import create_handoff_tool
 import asyncio
 
 # Thiết lập server MCP để lấy file tools
@@ -35,6 +36,7 @@ gemini = ChatGoogleGenerativeAI(
 )
 
 async def create_document_search_agent():
+    
     tools = await get_search_files_tool()
     prompt = (
         "Bạn là một trợ lý thông minh, chỉ sử dụng công cụ tìm kiếm files để hoàn thành nhiệm vụ. "
@@ -42,6 +44,12 @@ async def create_document_search_agent():
         "Nếu không tìm thấy file nào phù hợp, hãy trả lời chính xác: 'Không biết'. "
         "Không được trả lời thêm thông tin gì khác ngoài tên file hoặc câu 'Không biết'."
     )
+    # Handoff
+    transfer_to_text_extraction_agent = create_handoff_tool(
+        agent_name="Text Extraction Agent",
+        description="Transfer to Text Extraction Agent"
+    )
+    tools.append(transfer_to_text_extraction_agent)
     agent = create_react_agent(
         model=ollama_chat_model,
         tools=tools,
