@@ -1,14 +1,17 @@
 import os
 import sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import PyPDF2
 from docx import Document
 from pptx import Presentation
+
+# Thêm đường dẫn cha để import module cấu hình model
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from langchain_core.tools import tool
 from langchain.prompts import PromptTemplate
 from langgraph.prebuilt import create_react_agent
-from langgraph_swarm import create_handoff_tool
 from config.llm import ollama_chat_model
+
 # ---------------------- TOOLS ----------------------
 
 @tool("extract_text_from_pdf")
@@ -52,21 +55,18 @@ def extract_text_from_powerpoint(ppt_path: str) -> str:
 
 def create_text_extraction_agent():
     """Create a ReAct agent for text extraction."""
-    prompt = """
-    You are a document assistant that extracts text from files.
-    Use the appropriate tool to extract text from PDF, Word, or PowerPoint documents.
-    Respond only with the text content extracted.
-    """
-    transfer_to_file_classification_agent = create_handoff_tool(
-        agent_name="File Classification Agent",
-        description="Transfer to File Classification Agent"
-    )
     tools = [
         extract_text_from_pdf,
         extract_text_from_word,
-        extract_text_from_powerpoint,
-        transfer_to_file_classification_agent
+        extract_text_from_powerpoint
     ]
+
+    prompt = """
+    Bạn là trợ lý tài liệu trích xuất văn bản từ các tệp.
+    Sử dụng công cụ thích hợp để trích xuất văn bản từ các tài liệu PDF, Word hoặc PowerPoint.
+    Chỉ trả lời bằng nội dung văn bản đã trích xuất.
+    """
+
     agent = create_react_agent(
         tools=tools,
         model=ollama_chat_model,
@@ -81,7 +81,7 @@ if __name__ == "__main__":
     agent = create_text_extraction_agent()
     result = agent.invoke(
         {
-            "messages": "Extract text from the file at path: D:/Project/Chatbot_CNM/data/Chain_of_thought.pdf"
+            "messages": "Extract text from the file at path: C:/Users/AIP-PC051/Documents/Chatbot_MCP/data/Chain_of_thought.pdf"
         },
         config={"recursion_limit": 50}
     )

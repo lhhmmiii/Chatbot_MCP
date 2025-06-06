@@ -1,7 +1,7 @@
 import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config.llm import ollama_model, ollama_chat_model
+from config.llm import ollama_chat_model, ollama_model
 from config.prompt_template import file_classification_template
 from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser

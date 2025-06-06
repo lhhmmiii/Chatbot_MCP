@@ -9,7 +9,6 @@ from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain.tools import tool
 from config.llm import ollama_chat_model
-from langgraph_swarm import create_handoff_tool
 
 @tool
 def create_metadata(text: str, file_name: str, label: str):
@@ -54,52 +53,40 @@ def save_metadata_to_xlsx(metadata: dict, xlsx_file_name: str, folder_dir: str =
 
 def create_metadata_agent():
     """
-    Create an agent for generating metadata for a given text document.
+    Create a single agent that can both generate metadata and save it to an Excel file.
     """
-    transfer_to_save_metadata_to_xlsx_agent = create_handoff_tool(
-        agent_name="Save Metadata to XLSX Agent",
-        description="Transfer to Save Metadata to XLSX Agent"
+    prompt = (
+        "Bạn là một tác tử chuyên xử lý metadata cho tài liệu. "
+        "Nhiệm vụ của bạn là:\n"
+        "1. Tạo metadata từ nội dung tài liệu, tên tệp và nhãn được cung cấp.\n"
+        "2. Lưu metadata đó vào một tệp Excel (.xlsx) với tên được chỉ định.\n\n"
+        "Sử dụng các công cụ phù hợp để hoàn thành yêu cầu. "
+        "Trả về đường dẫn của file Excel sau khi hoàn tất."
     )
-    prompt = "You are an agent specialized in creating metadata for documents. Use the provided information to\
-    generate metadata."
+
     agent = create_react_agent(
-        tools=[create_metadata, transfer_to_save_metadata_to_xlsx_agent],
+        tools=[create_metadata, save_metadata_to_xlsx],
         model=ollama_chat_model,
         prompt=prompt,
         name="Metadata Agent"
     )
     return agent
 
-def save_metadata_to_xlsx_agent():
-    """
-    Create an agent for saving metadata to an .xlsx file.
-    """
-
-
-    prompt = "You are an agent specialized in saving metadata to an .xlsx file. Use the provided metadata to create the file."
-
-    agent = create_react_agent(
-        tools=[save_metadata_to_xlsx],
-        model=ollama_chat_model,
-        prompt=prompt,
-        name="Save Metadata to XLSX Agent"
-    )
-    return agent
-
 
 if __name__ == "__main__":
-    metadata_agent = save_metadata_to_xlsx_agent()
+    metadata_agent = create_metadata_agent()
     result = metadata_agent.invoke(
         {
             "messages": (
-                "Please export the Excel file containing the following metadata:\n"
+                "Hãy tạo metadata cho tài liệu sau:\n"
                 "- File Name: Chain_of_thought.pdf\n"
                 "- Label: Chain of Thought\n"
-                "- Text: This is a document about the chain of thought. The document is a PDF file."
-                "And the file name to save is Chain_of_thought.xlsx"
+                "- Text: This is a document about the chain of thought. The document is a PDF file.\n\n"
+                "Sau đó, lưu metadata vào file có tên: Chain_of_thought.xlsx"
             )
         },
         config={"recursion_limit": 50}
     )
+
     for message in result["messages"]:
         print(message.content)
