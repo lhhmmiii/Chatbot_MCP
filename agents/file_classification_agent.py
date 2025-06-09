@@ -7,11 +7,13 @@ from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain.tools import tool
 from langgraph.prebuilt import create_react_agent
-from base_agent import BaseAgent
+from agents.base import BaseAgent
 from schemas.agent_schema import ResponseFormat
 from langgraph.checkpoint.memory import MemorySaver
 from config.prompt import file_classification_prompt
 from utils.get_agent_response import get_agent_response
+from typing import Any, AsyncIterable, Dict
+from langchain_core.messages import AIMessage
 
 # MemorySaver
 memory = MemorySaver()
@@ -52,7 +54,26 @@ class FileClassificationAgent(BaseAgent):
     def invoke(self, query, sessionId) -> str:
         config = {'configurable': {'thread_id': sessionId}, 'recursion_limit': 50}
         response = self.graph.invoke({'messages': [('user', query)]}, config)
-        return get_agent_response(self.graph, response, config)
+        return get_agent_response(self.graph, response['messages'][-1], config)
+    
+    
+    async def stream(
+            self, query, sessionId, task_id
+        ) -> AsyncIterable[Dict[str, Any]]:
+            inputs = {'messages': [('user', query)]}
+            config = {'configurable': {'thread_id': sessionId}, 'recursion_limit': 50}
+
+
+            for item in self.graph.stream(inputs, config, stream_mode='values'):
+                message = item['messages'][-1]
+                if isinstance(message, AIMessage):
+                    yield {
+                        'response_type': 'text',
+                        'is_task_complete': False,
+                        'require_user_input': False,
+                        'content': message.content,
+                    }
+            yield get_agent_response(self.graph, message, config)
     
 
 if __name__ == "__main__":

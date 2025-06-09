@@ -27,7 +27,7 @@ def get_agent_response(graph, response, config):
                     'response_type': 'data',
                     'is_task_complete': True,
                     'require_user_input': False,
-                    'content': response['messages'][-1].content,
+                    'content': response.content,
                 }
         return {
             'is_task_complete': False,
