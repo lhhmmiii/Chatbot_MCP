@@ -8,12 +8,22 @@ from pptx import Presentation
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from langchain_core.tools import tool
-from langchain.prompts import PromptTemplate
 from langgraph.prebuilt import create_react_agent
-from config.llm import gemini  # đảm bảo model này hoạt động như OpenAI-compatible
+from langchain_core.messages import AIMessage
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.prebuilt import create_react_agent
+from config.llm import gemini
+from config.prompt import text_extraction_prompt
+from base_agent import BaseAgent
+from schemas.agent_schema import ResponseFormat
+
+from typing import Any, AsyncIterable, Dict
+
+# MemorySaver
+memory = MemorySaver()
+
 
 # ---------------------- TOOLS ----------------------
-
 @tool("extract_text_from_pdf")
 def extract_text_from_pdf(pdf_path: str) -> str:
     """Use this tool to extract text from a PDF file. Input is a string path to a .pdf file."""
@@ -53,39 +63,78 @@ def extract_text_from_powerpoint(ppt_path: str) -> str:
 
 # ---------------------- AGENT SETUP ----------------------
 
-def create_text_extraction_agent():
-    """Create a ReAct agent for text extraction."""
-    tools = [
-        extract_text_from_pdf,
-        extract_text_from_word,
-        extract_text_from_powerpoint
-    ]
 
-    prompt = """
-    Bạn là trợ lý tài liệu trích xuất văn bản từ các tệp.
-    Sử dụng công cụ thích hợp để trích xuất văn bản từ các tài liệu PDF, Word hoặc PowerPoint.
-    Chỉ trả lời bằng nội dung văn bản đã trích xuất.
-    """
+class TextExtractionAgent(BaseAgent):
+    """Text Extraction Agent backed by LangGraph."""
 
-    agent = create_react_agent(
-        tools=tools,
-        model=gemini,
-        prompt=prompt,
-        name="Text Extraction Agent"
-    )
-    return agent
+    def __init__(self):
+
+        super().__init__(
+            agent_name='TextExtractionAgent',
+            description='Extract text from various file types such as PDF, Word, and PowerPoint',
+            content_types=['text', 'text/plain'],
+        )
+
+        self.model = gemini
+
+        self.graph = create_react_agent(
+            self.model,
+            checkpointer=memory,
+            prompt=text_extraction_prompt,
+            response_format=ResponseFormat,
+            tools=[
+                extract_text_from_pdf,
+                extract_text_from_word,
+                extract_text_from_powerpoint
+            ],
+            name="Text Extraction Agent",
+        )
+
+    def invoke(self, query, sessionId) -> str:
+        config = {'configurable': {'thread_id': sessionId}, 'recursion_limit': 50}
+        response = self.graph.invoke({'messages': [('user', query)]}, config)
+        return self.get_agent_response(response, config)
+
+
+    def get_agent_response(self, response, config):
+        current_state = self.graph.get_state(config)
+        structured_response = current_state.values.get('structured_response')
+        if structured_response and isinstance(
+            structured_response, ResponseFormat
+        ):
+            if (
+                structured_response.status == 'input_required'
+            ):
+                return {
+                    'response_type': 'text',
+                    'is_task_complete': False,
+                    'require_user_input': True,
+                    'content': structured_response.question,
+                }
+            elif structured_response.status == 'error':
+                return {
+                    'response_type': 'text',
+                    'is_task_complete': False,
+                    'require_user_input': True,
+                    'content': structured_response.question,
+                }
+            elif structured_response.status == 'completed':
+                return {
+                    'response_type': 'data',
+                    'is_task_complete': True,
+                    'require_user_input': False,
+                    'content': response,
+                }
+        return {
+            'is_task_complete': False,
+            'require_user_input': True,
+            'content': 'We are unable to process your request at the moment. Please try again.',
+        }
 
 # ---------------------- RUN TEST ----------------------
 
-if __name__ == "__main__":
-    agent = create_text_extraction_agent()
-    result = agent.invoke(
-        {
-            "messages": "Extract text from the file at path: C:/Users/AIP-PC051/Documents/Chatbot_MCP/data/Chain_of_thought.pdf"
-        },
-        config={"recursion_limit": 50}
-    )
 
-    # In toàn bộ message để debug nếu cần
-    for msg in result["messages"]:
-        print(msg.content)
+if __name__ == "__main__":
+    agent = TextExtractionAgent()
+    result = agent.invoke(query = "Extract text from the file at path C:/Users/AIP-PC051/Documents/Chatbot_MCP/data/FinalReportTMA.pptx", sessionId = "123")
+    print(result)
