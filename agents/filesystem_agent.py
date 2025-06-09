@@ -7,7 +7,7 @@ from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import HumanMessage, AIMessage
 from config.llm import gemini
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain.output_parsers import PydanticOutputParser
 import asyncio
 
 # Thiết lập server MCP để lấy file tools
@@ -54,7 +54,7 @@ async def create_filesystem_agent():
         model=gemini,
         tools=tools,
         prompt=prompt,
-        name="Filesystem Agent"
+        name="Filesystem Agent",
     )
     return agent
 

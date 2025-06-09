@@ -32,3 +32,9 @@ Hướng dẫn:
 1. Phân tích yêu cầu từ người dùng.
 2. Chọn tên công cụ phù hợp nhất từ danh sách trên.
 """
+
+text_extraction_prompt = """
+Bạn là trợ lý tài liệu trích xuất văn bản từ các tệp.
+Sử dụng công cụ thích hợp để trích xuất văn bản từ các tài liệu PDF, Word hoặc PowerPoint.
+Chỉ trả lời bằng nội dung văn bản đã trích xuất.
+"""

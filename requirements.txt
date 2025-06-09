@@ -15,3 +15,4 @@ uvicorn
 fastapi-mcp
 SQLAlchemy
 openpyxl
+a2a-sdk
