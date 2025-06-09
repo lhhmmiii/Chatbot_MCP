@@ -16,8 +16,7 @@ from config.llm import gemini
 from config.prompt import text_extraction_prompt
 from base_agent import BaseAgent
 from schemas.agent_schema import ResponseFormat
-
-from typing import Any, AsyncIterable, Dict
+from utils.get_agent_response import get_agent_response
 
 # MemorySaver
 memory = MemorySaver()
@@ -93,43 +92,9 @@ class TextExtractionAgent(BaseAgent):
     def invoke(self, query, sessionId) -> str:
         config = {'configurable': {'thread_id': sessionId}, 'recursion_limit': 50}
         response = self.graph.invoke({'messages': [('user', query)]}, config)
-        return self.get_agent_response(response, config)
+        return get_agent_response(self.graph, response, config)
 
 
-    def get_agent_response(self, response, config):
-        current_state = self.graph.get_state(config)
-        structured_response = current_state.values.get('structured_response')
-        if structured_response and isinstance(
-            structured_response, ResponseFormat
-        ):
-            if (
-                structured_response.status == 'input_required'
-            ):
-                return {
-                    'response_type': 'text',
-                    'is_task_complete': False,
-                    'require_user_input': True,
-                    'content': structured_response.question,
-                }
-            elif structured_response.status == 'error':
-                return {
-                    'response_type': 'text',
-                    'is_task_complete': False,
-                    'require_user_input': True,
-                    'content': structured_response.question,
-                }
-            elif structured_response.status == 'completed':
-                return {
-                    'response_type': 'data',
-                    'is_task_complete': True,
-                    'require_user_input': False,
-                    'content': response,
-                }
-        return {
-            'is_task_complete': False,
-            'require_user_input': True,
-            'content': 'We are unable to process your request at the moment. Please try again.',
-        }
 
 # ---------------------- RUN TEST ----------------------
 

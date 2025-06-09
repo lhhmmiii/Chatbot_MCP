@@ -6,5 +6,6 @@ ollama_chat_model = ChatOllama(model="llama3.2")
 ollama_model = OllamaLLM(model="llama3.2")
 gemini = ChatGoogleGenerativeAI(
     model="gemini-2.0-flash",
+    temperature=0.0,
     google_api_key="AIzaSyD87mLar9TxgjIUa_wQdRSvC16aQ97pRhs"
 )

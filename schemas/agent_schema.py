@@ -11,3 +11,4 @@ class ResponseFormat(BaseModel):
     content: str = Field(
         description='Content of the response'
     )
+

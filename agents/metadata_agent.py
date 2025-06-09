@@ -8,7 +8,15 @@ from langgraph.prebuilt import create_react_agent
 from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain.tools import tool
-from config.llm import ollama_chat_model
+from config.llm import gemini
+from base_agent import BaseAgent
+from schemas.agent_schema import ResponseFormat
+from langgraph.checkpoint.memory import MemorySaver
+from config.prompt import metadata_prompt
+from utils.get_agent_response import get_agent_response
+
+# MemorySaver
+memory = MemorySaver()  
 
 @tool
 def create_metadata(text: str, file_name: str, label: str):
@@ -51,42 +59,41 @@ def save_metadata_to_xlsx(metadata: dict, xlsx_file_name: str, folder_dir: str =
     df.to_excel(path, index=False, engine='openpyxl')
     return path
 
-def create_metadata_agent():
-    """
-    Create a single agent that can both generate metadata and save it to an Excel file.
-    """
-    prompt = (
-        "Bạn là một tác tử chuyên xử lý metadata cho tài liệu. "
-        "Nhiệm vụ của bạn là:\n"
-        "1. Tạo metadata từ nội dung tài liệu, tên tệp và nhãn được cung cấp.\n"
-        "2. Lưu metadata đó vào một tệp Excel (.xlsx) với tên được chỉ định.\n\n"
-        "Sử dụng các công cụ phù hợp để hoàn thành yêu cầu. "
-        "Trả về đường dẫn của file Excel sau khi hoàn tất."
-    )
 
-    agent = create_react_agent(
-        tools=[create_metadata, save_metadata_to_xlsx],
-        model=ollama_chat_model,
-        prompt=prompt,
-        name="Metadata Agent"
-    )
-    return agent
+
+class MetadataAgent(BaseAgent):
+    """Metadata Agent backed by LangGraph."""
+
+    def __init__(self):
+        super().__init__(
+            agent_name='MetadataAgent',
+            description='Create metadata for a given text document and save it to an Excel file',
+            content_types=['text', 'text/plain']
+        )
+
+        self.model = gemini
+
+        self.graph = create_react_agent(
+            self.model,
+            checkpointer=memory,
+            prompt=metadata_prompt,
+            response_format=ResponseFormat,
+            tools=[create_metadata, save_metadata_to_xlsx],
+            name="Metadata Agent",
+        )
+
+    def invoke(self, query, sessionId) -> str:
+        config = {'configurable': {'thread_id': sessionId}, 'recursion_limit': 50}
+        response = self.graph.invoke({'messages': [('user', query)]}, config)
+        return get_agent_response(self.graph, response, config)
+    
 
 
 if __name__ == "__main__":
-    metadata_agent = create_metadata_agent()
-    result = metadata_agent.invoke(
-        {
-            "messages": (
-                "Hãy tạo metadata cho tài liệu sau:\n"
+    metadata_agent = MetadataAgent()
+    result = metadata_agent.invoke(query = "Hãy tạo metadata cho tài liệu sau:\n"
                 "- File Name: Chain_of_thought.pdf\n"
                 "- Label: Chain of Thought\n"
                 "- Text: This is a document about the chain of thought. The document is a PDF file.\n\n"
-                "Sau đó, lưu metadata vào file có tên: Chain_of_thought.xlsx"
-            )
-        },
-        config={"recursion_limit": 50}
-    )
-
-    for message in result["messages"]:
-        print(message.content)
+                "Sau đó, lưu metadata vào file có tên: Chain_of_thought.xlsx", sessionId = "123")
+    print(result)
