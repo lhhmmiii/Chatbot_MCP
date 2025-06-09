@@ -6,7 +6,7 @@ from agents.filesystem_agent import create_filesystem_agent
 from text_extraction_agent import create_text_extraction_agent
 from file_classification_agent import create_file_classification_agent
 from metadata_agent import create_metadata_agent
-from config.llm import gemini
+from config.llm import ollama_chat_model
 from utils.pretty_print_message import pretty_print_messages
 from PIL import Image
 import io
@@ -20,7 +20,7 @@ async def create_supervisor_agent():
     metadata_agent = create_metadata_agent()
     supervisor = create_supervisor(
         agents=[filesystem_agent, text_extraction_agent, file_classification_agent, metadata_agent],
-        model=gemini,
+        model=ollama_chat_model,
         prompt = """
         Bạn đóng vai trò là người điều phối trong một hệ thống gồm nhiều Agent chuyên trách xử lý tài liệu.  
         Nhiệm vụ của bạn là tiếp nhận và phân tích yêu cầu đầu vào (có thể là truy vấn, tệp tin hoặc mô tả nhiệm vụ), sau đó phân công chính xác các Agent phù hợp để thực hiện tác vụ đó.

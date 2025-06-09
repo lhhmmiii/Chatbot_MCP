@@ -8,7 +8,7 @@ from langgraph.prebuilt import create_react_agent
 from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain.tools import tool
-from config.llm import gemini
+from config.llm import ollama_chat_model
 
 @tool
 def create_metadata(text: str, file_name: str, label: str):
@@ -66,7 +66,7 @@ def create_metadata_agent():
 
     agent = create_react_agent(
         tools=[create_metadata, save_metadata_to_xlsx],
-        model=gemini,
+        model=ollama_chat_model,
         prompt=prompt,
         name="Metadata Agent"
     )
@@ -90,4 +90,3 @@ if __name__ == "__main__":
 
     for message in result["messages"]:
         print(message.content)
-

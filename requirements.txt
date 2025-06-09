@@ -6,6 +6,7 @@ langchain-mcp-adapters
 langchain-ollama
 langgraph
 langchain-community
+langgraph-swarm
 python-dotenv
 PyPDF2
 python-docx
