@@ -16,3 +16,5 @@ uvicorn
 fastapi-mcp
 SQLAlchemy
 openpyxl
+langchain_google_genai
+langgraph_supervisor

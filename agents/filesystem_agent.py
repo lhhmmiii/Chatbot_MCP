@@ -6,8 +6,7 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import HumanMessage, AIMessage
-from config.llm import ollama_chat_model
-from langchain_google_genai import ChatGoogleGenerativeAI
+from config.llm import ollama_chat_model, gemini
 import asyncio
 
 # Thiết lập server MCP để lấy file tools
@@ -19,7 +18,7 @@ client = MultiServerMCPClient({
             "npx",
             "-y",
             "@modelcontextprotocol/server-filesystem",
-            "C:\\Users\\AIP-PC051\\Documents\\Chatbot_MCP\\data",
+            "D:\\Project\\Chatbot_CNM\\data",
         ],
         "transport": "stdio",
     }
@@ -28,32 +27,43 @@ client = MultiServerMCPClient({
 
 async def create_filesystem_agent():
     tools = await client.get_tools()
-    prompt = """
-    Bạn là một trợ lý hệ thống tập tin thông minh, có quyền sử dụng các công cụ sau: read_file, read_multiple_files, write_file, edit_file, create_directory, list_directory, move_file, search_files, get_file_info, list_allowed_directories.
+    file_system_agent_prompt = """
+### 🧠 Vai trò:
+Bạn là một trợ lý hệ thống tệp thông minh, được cung cấp các công cụ sau:
+`read_file`, `read_multiple_files`, `write_file`, `edit_file`, `create_directory`, `list_directory`, `move_file`, `search_files`, `get_file_info`, `list_allowed_directories`.
 
-    Mỗi khi nhận được yêu cầu, bạn phải:
-    1. Hiểu rõ mục tiêu của người dùng.
-    2. Chỉ sử dụng **các công cụ được cung cấp** để thực hiện nhiệm vụ và chỉ truy vấn trong thư mục được cho phép.
-    3. Trả lời ngắn gọn, chỉ bao gồm thông tin có được từ công cụ. Không suy đoán hoặc bịa thêm dữ liệu.
+---
 
-    Quy tắc:
-    - Chỉ đọc file khi được yêu cầu cụ thể (ví dụ: “đọc nội dung của file A” → dùng `read_file`).
-    - Chỉ ghi/ghi đè file khi có chỉ thị rõ ràng (ví dụ: “ghi nội dung X vào file Y” → dùng `write_file`).
-    - Không bao giờ thực hiện thay đổi khi không được yêu cầu trực tiếp.
-    - Luôn tìm file trước khi thao tác nếu không chắc đường dẫn (dùng `search_files`).
-    - Chỉ trả về tên file, nội dung file, thông tin metadata, hoặc xác nhận hành động đã hoàn tất.
-    - Trả lời “Không biết” nếu không tìm thấy dữ liệu phù hợp sau khi đã tìm kiếm bằng `search_files`.
+### 🎯 Mục tiêu:
+Xử lý yêu cầu của người dùng bằng cách sử dụng **duy nhất các công cụ được cung cấp**, và chỉ truy cập trong **các thư mục được phép**.
 
-    Bạn **không bao giờ** được trả lời suy luận ngoài dữ liệu có sẵn từ file hoặc thông tin công cụ trả về.
+---
 
-    Luôn tuân thủ nghiêm ngặt các giới hạn thư mục được phép thao tác.
+### 🛠️ Hành vi bắt buộc:
+1. **Hiểu rõ mục tiêu của người dùng.**
+2. **Chỉ dùng công cụ nếu được yêu cầu rõ ràng.**
+3. **Tuyệt đối không suy diễn, không dự đoán nội dung.**
+4. Chỉ phản hồi với: tên tệp, nội dung tệp, thông tin metadata, hoặc xác nhận hành động đã thực hiện.
 
-    Hãy sẵn sàng nhận lệnh.
-    """
+---
+
+### ⚠️ Quy tắc nghiêm ngặt:
+- Chỉ dùng `read_file` khi được yêu cầu cụ thể: *"Đọc nội dung tệp A"*.
+- Chỉ dùng `write_file` nếu có hướng dẫn rõ: *"Ghi nội dung X vào tệp Y"*.
+- Không thay đổi bất kỳ tệp nào nếu không được chỉ định rõ ràng.
+- Nếu không chắc đường dẫn, **bắt buộc phải dùng `search_files` trước**.
+- Nếu không tìm thấy dữ liệu phù hợp sau khi tìm kiếm, phản hồi: `"Unknown"`.
+- **Không được suy đoán** hoặc tạo ra nội dung không có thật từ tệp.
+
+---
+
+Bạn đã sẵn sàng tiếp nhận lệnh.
+"""
+
     agent = create_react_agent(
-        model=ollama_chat_model,
+        model=gemini,
         tools=tools,
-        prompt=prompt,
+        prompt=file_system_agent_prompt,
         name="Filesystem Agent"
     )
     return agent
@@ -61,7 +71,13 @@ async def create_filesystem_agent():
 async def main():
     agent = await create_filesystem_agent()
     response = await agent.ainvoke(
-        {"messages": [{"role": "user", "content": "Tìm kiếm các file liên quan tới LLM trong thư mục cho phép"}]},
+        {"messages": [
+            {
+                "role": "user", 
+                "content": "Tìm kiếm file liên quan đến LLM trong thư mục được phép"
+            }
+        ]
+        },
         config={"recursion_limit": 50}
     )
     for message in response["messages"]:

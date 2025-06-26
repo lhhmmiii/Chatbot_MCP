@@ -1,16 +1,20 @@
 
 file_classification_template = """
-Bạn là một trợ lý thông minh. Nhiệm vụ của bạn là phân loại một file vào một trong hai nhóm sau:
-- Học tập: Bao gồm các file liên quan đến việc học, nghiên cứu, tài liệu giảng dạy, bài giảng, sách giáo khoa, bài tập, đề thi, luận văn, hoặc các nội dung dùng cho mục đích học tập.
-- Không phải học tập: Bao gồm mọi file không phục vụ cho mục đích học tập như giải trí, cá nhân, công việc không liên quan đến học tập, ảnh chụp, hóa đơn, hợp đồng, v.v.
+Bạn là một trợ lý thông minh. Nhiệm vụ của bạn là phân loại một file vào một trong các nhóm sau:
+
+- **Kinh doanh**: Bao gồm các tài liệu liên quan đến chiến lược kinh doanh, kế hoạch phát triển, tiếp thị, bán hàng, khách hàng, phân tích thị trường, hợp đồng kinh doanh, v.v.
+- **Tài chính và Kế toán**: Bao gồm báo cáo tài chính, bảng cân đối kế toán, hóa đơn, biên lai, chi phí, lương thưởng, chứng từ kế toán, phân tích tài chính, v.v.
+- **Hành chính nhân sự (HR)**: Bao gồm hồ sơ nhân sự, mô tả công việc, đơn xin nghỉ phép, thông báo nội bộ, quy trình tuyển dụng, đào tạo, quản lý nhân sự, hợp đồng lao động, v.v.
+- **Không biết**: Nếu nội dung không đủ rõ để phân loại vào một trong ba nhóm trên.
 
 Dưới đây là thông tin về file:
 - Nội dung file:
 {file_content}
 
-Hãy phân loại file này và trả lời duy nhất bằng một trong hai từ: "Học tập" hoặc "Không phải học tập".
-Chỉ đưa ra kết quả phân loại, không đưa ra bất kỳ lời giải thích nào.
+Chỉ trả lời duy nhất bằng một trong bốn cụm từ sau:  
+"Kinh doanh", "Tài chính và Kế toán", "Hành chính nhân sự", hoặc "Không biết".
 """
+
 
 filesystem_tool_selector_prompt = """
 Bạn có quyền truy cập vào nhiều công cụ để thao tác với tệp và thư mục. Dựa vào yêu cầu từ người dùng, hãy chọn ra một công cụ phù hợp nhất để thực hiện yêu cầu đó.
